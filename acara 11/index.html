@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peta Interaktif Modern</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #a2a2b7;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin: 20px 0;
+            font-size: 2rem;
+            color: #241919;
+        }
+
+        #map {
+            width: 90%;
+            max-width: 1200px;
+            height: 500px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: #fff;
+        }
+
+        .legend-toggle {
+            background: #555;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: center;
+            width: max-content;
+        }
+
+        .legend {
+            background: rgb(255, 255, 255);
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            line-height: 18px;
+            color: #555;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .legend img {
+            vertical-align: middle;
+            margin-right: 5px;
+        }
+
+        .legend h4 {
+            margin-bottom: 8px;
+        }
+
+        .legend .split {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .legend .split div {
+            width: 50%;
+        }
+
+        footer {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #2f0d0d;
+        }
+
+        footer a {
+            text-decoration: none;
+            color: #2d1717;
+            font-weight: bold;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Peta Interaktif Kabupaten Bantul</h1>
+    <div id="map"></div>
+    <footer>
+        Dibuat oleh <a href="https://www.instagram.com/istruee99/#" target="_blank">Tri Putra</a>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Inisialisasi peta
+        var map = L.map('map').setView([-7.758040859371218, 110.39479946357453], 10.4); // Koordinat pusat Kediri
+
+        // Tambahkan basemap dari OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Tambahkan layer poligon dari GeoServer
+        var polyLayer = L.tileLayer.wms('http://localhost:8080/geoserver/batas_admin/wms', {
+            layers: 'batas_admin:batas_admin',
+            format: 'image/png',
+            transparent: true,
+            attribution: 'GeoServer'
+        }).addTo(map);
+
+        // Tambahkan layer polyline dari GeoServer
+        var lineLayer = L.tileLayer.wms('http://localhost:8080/geoserver/Jalan/wms', {
+            layers: 'Jalan:JALAN_LN_25K',
+            format: 'image/png',
+            transparent: true,
+            attribution: 'GeoServer'
+        }).addTo(map);
+
+        // Kontrol layer
+        var overlayMaps = {
+            "Wilayah Desa (Poligon)": polyLayer,
+            "Jaringan Jalan (Polyline)": lineLayer
+        };
+        L.control.layers(null, overlayMaps).addTo(map);
+
+        // Kontrol legenda di sisi kiri
+        var legendControl = L.Control.extend({
+            options: { position: 'topleft' }, // Letak legenda di kiri atas
+            onAdd: function () {
+                var container = L.DomUtil.create('div');
+                container.innerHTML = `
+                    <div class="legend-toggle">Tampilkan Legenda</div>
+                    <div class="legend" style="display: none;">
+                        <h4>Legenda</h4>
+                        <div class='split'>
+                            <div>
+                                <p>Wilayah Desa</p>
+                                <img src='http://localhost:8080/geoserver/batas_admin/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=batas_admin:batas_admin' alt='Legenda Wilayah Desa'>
+                            </div>
+                            <div>
+                                <p>Jaringan Jalan</p>
+                                <img src='http://localhost:8080/geoserver/Jalan/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=Jalan:JALAN_LN_25K' alt='Legenda Jaringan Jalan'>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Event toggle untuk menampilkan/menyembunyikan legenda
+                const legendToggle = container.querySelector('.legend-toggle');
+                const legend = container.querySelector('.legend');
+
+                legendToggle.addEventListener('click', () => {
+                    if (legend.style.display === 'none' || legend.style.display === '') {
+                        legend.style.display = 'block';
+                        legendToggle.textContent = 'Sembunyikan Legenda';
+                    } else {
+                        legend.style.display = 'none';
+                        legendToggle.textContent = 'Tampilkan Legenda';
+                    }
+                });
+
+                return container;
+            }
+        });
+
+        // Menambahkan kontrol legenda ke peta
+        map.addControl(new legendControl());
+    </script>
+</body>
+</html>
